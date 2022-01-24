@@ -9,41 +9,55 @@ public class Main {
 	public static void main(String[] args) {
 		
 		System.out.println("Welcome to Wordle Helper!");
+		// collect all our words, and their values
 		HashMap<String, Integer> wordHash = calculateWordPoints();
+		// recommend the top 5 words to give the player options
 		System.out.println("We recommend the following starting Words: ");
 		Map<String, Integer> recommendations = wordHash.entrySet().stream()
 				.sorted((o1, o2) -> o2.getValue() - o1.getValue())
 				.limit(5)
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 		
-		System.out.println(recommendations);
-		Boolean solved = false;
+		for(String rec : recommendations.keySet()) {
+			System.out.println("\t" + rec);
+		}
 		
+		// determine if the game is over
+		Boolean gameOver = false;
+		
+		// allow for user input
 		Scanner in = new Scanner(System.in);
-		HashMap<String, Integer> filteredWordHash = null;
 		
-		while (!solved) {
+		// game loop
+		while (!gameOver) {
+			
+			// initialize some variables for our while loops
 			String check = "N";
 			String wordInput = "";
+			
+			// user enters the word they played in the game
 			while((!check.equals("Y")) && (!check.equals("y"))) {
 				System.out.print("Enter Your Word to Continue: ");
 				wordInput = in.nextLine();
 				while (!checkWord(wordInput)) {
 					// word invalid
 					System.out.print("Your Word is Invalid Try again: ");
-					wordInput = in.nextLine();
+					wordInput = in.nextLine().toLowerCase();
 				}
 				System.out.print("\nYou Entered: " + wordInput + "? (Y/N) ");
 				check = in.nextLine();
 			}
+			// resetting variables so we can use them again
 			check = "N";
 			String placementInput = "";
+			
+			// user enters the patter they got back
 			while((!check.equals("Y")) && (!check.equals("y"))) {
 				System.out.println("What result did you get back?");
 				System.out.println("\tN - for letter not in word");
 				System.out.println("\tY - for letter not in correct place");
 				System.out.println("\tG - for letter in correct place");
-				placementInput = in.nextLine();
+				placementInput = in.nextLine().toUpperCase();
 				while(!checkPlacement(placementInput)) {
 					System.out.print("Your Result is Invalid Try again (e.g. NGYGN): ");
 					placementInput = in.nextLine();
@@ -51,45 +65,70 @@ public class Main {
 				System.out.print("\nYou Got Back: " + placementInput + "? (Y/N) ");
 				check = in.nextLine();
 			}
+			
+			// if the player gets back all green they won, and its game over
 			if(placementInput.equals("GGGGG")) {
 				System.out.println("You Won!");
-				solved = true;
+				gameOver = true;
 				break;
 			}
-			filteredWordHash = generateNewWordList(placementInput.split(""), wordInput.split(""), wordHash);
-			if(filteredWordHash.size() > 0) {
+			
+			// filter our word list based on the the feedback from the game
+			wordHash = generateNewWordList(placementInput.split(""), wordInput.split(""), wordHash);
+			
+			// make new recommendations based on our new list (if we have words still)
+			if(wordHash.size() > 0) {
 				System.out.println("We recommend the following words next: ");
-				recommendations = filteredWordHash.entrySet().stream()
+				recommendations = wordHash.entrySet().stream()
 						.sorted((o1, o2) -> o2.getValue() - o1.getValue())
 						.limit(5)
 						.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 				
-				System.out.println(recommendations);
-				wordHash = filteredWordHash;
+				for(String rec : recommendations.keySet()) {
+					System.out.println("\t" + rec);
+				}
 			} else {
-				solved = true;
+				// our word list isn't perfect so if we run out of words to suggest its game over
+				gameOver = true;
 				System.out.println("Sorry, we don't have any words that fit these restrictions");
 			}
 		}
-		
+		// close out input stream
 		in.close();
-		System.out.println("Done");
 	}
 	
+	// generate a new word list, based on input stream, word input, and previous word list
 	public static HashMap<String, Integer> generateNewWordList(String[] placementInput, String[] wordInput, HashMap<String, Integer> wordHash) {
 		
 		ArrayList<String> removeLetters = new ArrayList<String>();
 		HashMap<String, ArrayList<Integer>> wrongPlaceLetters = new HashMap<String, ArrayList<Integer>>();
-		HashMap<String, Integer> rightPlaceLetters = new HashMap<String, Integer>();
+		HashMap<Integer, String> rightPlaceLetters = new HashMap<Integer, String>();
 		
+		
+		// iterating over out two arrays (placementInput and wordInput)
 		for(int i=0; i < 5; i++) {
 			String placement = placementInput[i];
 			String letter = wordInput[i];
+			
+			// if we get a letter that isn't in our final word
+			// we want to remove words with that letter
 			if(placement.equals("N")) {
 				removeLetters.add(letter);
+				
+			// if we get letters in the correct place
+			// we want to keep only words with that letter in that place
+			// same letter could be in two place
+			// same place will only have one correct letter
 			} else if(placement.equals("G")) {
-				rightPlaceLetters.put(letter, i);
+				rightPlaceLetters.put(i, letter);
+				
+			// if we get letters that are in the wrong place
+			// we want to keep words with those letters in them
 			} else if(placement.equals("Y")) {
+				// we want to keep track of were the letters
+				// don't suggest letters in the same place
+				// we could have two of the same letter in our word
+				// and have them both be in the wrong place so we have an ArrayList
 				if(wrongPlaceLetters.get(letter) == null) {
 					ArrayList<Integer> placementList = new ArrayList<Integer>();
 					placementList.add(i);
@@ -102,6 +141,7 @@ public class Main {
 			}
 		}
 		
+		// Step 1: Filter out all the letters that aren't there
 		HashMap<String, Integer> filteredMapNotThere = new HashMap<String, Integer>();
 		
 		for (Map.Entry<String, Integer> set : wordHash.entrySet()) {
@@ -122,16 +162,16 @@ public class Main {
 			}
 		}
 		
+		// Step 2: Keep only words with correct letter placement
 		HashMap<String, Integer> filteredMapRightPlacement = new HashMap<String, Integer>();
 		
 		for (Map.Entry<String, Integer> setWord : filteredMapNotThere.entrySet()) {
 			String word = setWord.getKey();
 			String[] strArray = word.split("");
 			Boolean wordValid = true;
-			// HashMap<String, Integer> rightPlaceLetters = new HashMap<String, Integer>();
-			for (Map.Entry<String, Integer> setLetter : rightPlaceLetters.entrySet()) {
-				String letter = setLetter.getKey();
-				Integer position = setLetter.getValue();
+			for (Map.Entry<Integer, String> setLetter : rightPlaceLetters.entrySet()) {
+				String letter = setLetter.getValue();
+				Integer position = setLetter.getKey();
 				if (!strArray[position].equals(letter)) {
 					// letter in right place so its valid
 					wordValid = false;
@@ -143,6 +183,7 @@ public class Main {
 			}
 		}
 		
+		// Step 3: Keep only words with our wrong place letters in them
 		HashMap<String, Integer> containingYellow = new HashMap<String, Integer>();
 		
 		Set<String> keepLetters = wrongPlaceLetters.keySet();
@@ -156,6 +197,14 @@ public class Main {
 			for(String letter : keepLetters) {
 				if(!strList.contains(letter)) {
 					wordValid = false;
+				} else {
+					// word does contain letter
+					ArrayList<Integer> incorrectIndexes = wrongPlaceLetters.get(letter);
+					Integer index = strList.indexOf(letter);
+					if(incorrectIndexes.contains(index)) {
+						// index we have already tried and know is incorrect
+						wordValid = false;
+					}
 				}
 			}
 			
@@ -164,9 +213,11 @@ public class Main {
 			}
 		}
 		
+		// return our final HashMap
 		return containingYellow;
 	}
 	
+	// check if a word is valid (5 letters)
 	  public static Boolean checkWord(String word) {
 		  if(word.length() != 5) {
 			  return false;
@@ -180,6 +231,7 @@ public class Main {
 		  return true;
 	  }
 	  
+	  // check if placement is valid (5 characters, all characters must be either N,Y,or G
 	  public static Boolean checkPlacement(String input) {
 		  List<String> listvalidChar = Arrays.asList("N", "Y", "G");
 		  input = input.trim();
@@ -196,6 +248,7 @@ public class Main {
 		  
 	  }
 	
+	  // calculate the points for each word based on the frequency of each letter
 	public static HashMap<String, Integer> calculateWordPoints() {
 		HashMap<String, Integer> letterFrequency = readInLetterFrequency();
 		ArrayList<String> words = readInWords();
@@ -218,6 +271,7 @@ public class Main {
 		
 	}
 	
+	// turn our array into a set then back to an array to remove duplicates
 	public static String[] removeDuplicates(String[] strArray) {
 		LinkedHashSet<String> strSet = new LinkedHashSet<String>(Arrays.asList(strArray));
 		String[] newArray = strSet.toArray(new String[ strSet.size() ]);
@@ -225,6 +279,7 @@ public class Main {
 		
 	}
 	
+	// read the words in from the 5-letter word file
 	public static ArrayList<String> readInWords() {
 		ArrayList<String> wordList = new ArrayList<String>();
 	    try {
@@ -243,6 +298,7 @@ public class Main {
 		return wordList;
 	}
 	
+	// read the letter frequency in from the letterFrequency file
 	public static HashMap<String, Integer> readInLetterFrequency() {
 		HashMap<String, Integer> letterFrequency = new HashMap<String, Integer>();
 		BufferedReader br = null;
