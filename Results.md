@@ -17,3 +17,11 @@ Jan 26 2022
 - Guess 3: amuck - YMMGG
 - Guess 4: kyack - NNGGG
 - Guess 5: whack - GGGGG
+
+Jan 27 2022
+- Correct Word - Mount
+- Guess 1: serai - NNNNN
+- Guess 2: nould - yggnn
+- Guess 3: young - ngggn
+- Guess 4: count - ngggg
+- Guess 5: mount - ggggg
