@@ -25,3 +25,11 @@ Jan 27 2022
 - Guess 3: young - ngggn
 - Guess 4: count - ngggg
 - Guess 5: mount - ggggg
+
+Jan 28 2022
+- Correct Word - Perky
+- Guess 1: raise - ynnny
+- Guess 2: enrol - yngnn
+- Guess 3: buret - nngyn
+- Guess 4: merch - nyynn
+- Guess 5: perky - ggggg
